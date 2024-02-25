@@ -1,5 +1,6 @@
 #!/bin/bash
 
+    screen
     # Установка Apache и PHP 
     sudo apt update
     sudo apt install -y apache2 php libapache2-mod-php php-mysql php-cli php-common php-mbstring php-gd php-intl php-xml php-mysql php-zip php-curl php-xmlrpc wget unzip nginx mysql-server
@@ -17,7 +18,7 @@
     Grant_DB="GRANT ALL PRIVILEGES ON $DBname.* TO '${DBuser}'@'localhost' WITH GRANT OPTION;"
 
     # Переменные
-    Site_ip='192.168.1.'
+    Site_ip='192.168.1.147'
     Port_apache='8080'
     Site_Name='test.work'
     CMS_name='cms.test.work'
@@ -73,8 +74,7 @@
     wget https://downloads.joomla.org/ru/cms/joomla5/5-0-2/Joomla_5-0-2-Stable-Full_Package.zip
     sudo mkdir /var/www/joomla/
     sudo cp /tmp/$Site_Name/.htaccess $CMS_path
-    sudo unzip Joomla_5-0-2-Stable-Full_Package.zip -d $CMS_path
-    sudo chown -R root:root /var/www/
+    sudo unzip Joomla_5-0-2-Stable-Full_Package.zip
     sudo chown -R www-data.www-data $CMS_path
     sudo chmod -R 755 $CMS_path
 
@@ -94,7 +94,7 @@
     sudo sed -i "s/database_name_here/"$DBname"/g" /var/www/wordpress/wp-config.php
     sudo sed -i "s/username_here/"$DBuser"/g" /var/www/wordpress/wp-config.php
     sudo sed -i "s/password_here/"$DBuserPwd"/g" /var/www/wordpress/wp-config.php
-    sudo cp  wordpress/* $WP_path
+    sudo cp --recursive wordpress/* $WP_path
     sudo chown -R www-data:www-data $WP_path
     sudo chmod -R 755 $WP_path
 
@@ -116,4 +116,3 @@
 
     curl -s -X POST $URL -d chat_id=$CHAT_ID -d text="$MESSAGE"
 
-    echo "Установка WordPress завершена. Перейдите к wordpress.test в вашем веб-браузере для настройки."
