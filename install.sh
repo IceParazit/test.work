@@ -74,7 +74,7 @@
     wget https://downloads.joomla.org/ru/cms/joomla5/5-0-2/Joomla_5-0-2-Stable-Full_Package.zip
     sudo mkdir /var/www/joomla/
     sudo cp /tmp/$Site_Name/.htaccess $CMS_path
-    sudo unzip Joomla_5-0-2-Stable-Full_Package.zip
+    sudo unzip Joomla_5-0-2-Stable-Full_Package.zip -d $CMS_path
     sudo chown -R www-data.www-data $CMS_path
     sudo chmod -R 755 $CMS_path
 
