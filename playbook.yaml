@@ -1,0 +1,248 @@
+---
+- hosts: all
+  remote_user: lin-admin
+  become: true
+  become_method: sudo
+  tasks:
+  - name: Wait for automatic system updates
+    shell: "while sudo fuser /var/lib/dpkg/{{ item }} > /dev/null 2>&1; do sleep 1; done;"
+    with_items:
+      - lock
+      - lock-frontend
+
+  - name: upgrade a server
+    apt:
+      update_cache: yes
+      upgrade: dist
+      autoremove: yes
+
+  - name: Install pymysql
+    pip:
+      name: pymysql
+      executable: pip3
+
+  - name: Install a list of packages
+    apt:
+      name: "{{ packages }}"
+      update_cache: yes
+    vars:
+      packages:
+      - apache2
+      - python3
+      - mysql-server
+      - nginx
+      - php-xmlrpc
+      - php-zip
+      - php-mysql
+      - php-xml
+      - php-intl
+      - php-gd
+      - php-common
+      - php-cli
+      - libapache2-mod-php
+      - unzip
+      - git
+      - vim
+      - curl
+      - wget
+      - php
+
+  - name: Create a new database
+    community.mysql.mysql_db:
+      name: DB
+      login_unix_socket: /run/mysqld/mysqld.sock
+      state: present
+  - name: Create user with password, all database privileges and 'WITH GRANT OPTION' in db1 and db2
+    community.mysql.mysql_user:
+      state: present
+      login_unix_socket: /run/mysqld/mysqld.sock
+      name: DBlin-admin
+      password: f8fbee5ed75b07741c53f4d68e516d4a
+      priv:
+        'DB.*': 'ALL,GRANT'
+
+  - name: Download Wordpress
+    ansible.builtin.get_url:
+      url: "{{ item.url }}"
+      dest: "{{ item.dest }}"
+    loop:
+      - url: https://wordpress.org/latest.tar.gz
+        dest: /tmp/wordpress.tar.gz
+      - url: https://downloads.joomla.org/ru/cms/joomla5/5-0-2/Joomla_5-0-2-Stable-Full_Package.zip
+        dest: /tmp/joomla.zip
+
+  - name: Clone a repo
+    ansible.builtin.git:
+      repo: https://github.com/IceParazit/test.work.git
+      dest: /tmp/git
+
+
+  - name: Create a directory for joomla and wordpress
+    ansible.builtin.file:
+      path: "{{ item.path }}"
+      state: directory
+      mode: '0755'
+    loop:
+      - path: /var/www/wordpress
+      - path: /var/www/joomla
+
+
+  - name: Unarchive a file that is already on the remote machine
+    ansible.builtin.unarchive:
+      remote_src: yes
+      src: /tmp/joomla.zip
+      dest: /var/www/joomla
+      mode: '755'
+      owner: www-data
+
+  - name: Unarchive a file that is already on the remote machine
+    ansible.builtin.unarchive:
+      remote_src: yes
+      src: /tmp/wordpress.tar.gz
+      dest: /var/www
+      mode: '755'
+      owner: www-data
+
+  - name: Copy cfg to nginx
+    ansible.builtin.copy:
+      remote_src: yes
+      src: /tmp/git/nginx.conf
+      dest: "{{ item.dest }}"
+      owner: root
+      group: root
+      mode: '750'
+    loop:
+      - dest: /etc/nginx/sites-available/cms.test.work.conf
+      - dest: /etc/nginx/sites-available/test.work.conf
+
+  - name: Copy cfg to apache
+    ansible.builtin.copy:
+      remote_src: yes
+      src: /tmp/git/apache2.conf
+      dest: "{{ item.dest }}"
+      owner: root
+      group: root
+      mode: '750'
+    loop:
+      - dest: /etc/apache2/sites-available/cms.test.work.conf
+      - dest: /etc/apache2/sites-available/test.work.conf
+
+  - name: Copy cfg to apache
+    ansible.builtin.copy:
+      remote_src: yes
+      src: /tmp/git/port.conf
+      dest: /etc/apache2/ports.conf
+      owner: root
+      group: root
+      mode: '750'
+
+  - name: Copy .htaccess
+    ansible.builtin.copy:
+      remote_src: yes
+      src: /tmp/git/.htaccess
+      dest: /var/www/joomla/.htaccess
+      owner: www-data
+      group: www-data
+      mode: '750'
+
+
+  - name: enter port (cms.test.work)
+    ansible.builtin.replace:
+      path: /etc/apache2/sites-available/cms.test.work.conf
+      replace: "{{ item.replace }}"
+      regexp: "{{ item.regexp }}"
+    loop:
+      - replace: '8080'
+        regexp: 'enter_port_here'
+      - replace: 'cms.test.work'
+        regexp: 'enter_name_here'
+      - replace: '/var/www/joomla'
+        regexp: 'enter_path_here'
+
+  - name: enter port (ports.conf)
+    ansible.builtin.replace:
+      path: /etc/apache2/ports.conf
+      replace: '8080'
+      regexp: 'enter_port_here'
+
+  - name: enter port (test.work)
+    ansible.builtin.replace:
+      path: /etc/apache2/sites-available/test.work.conf
+      replace: "{{ item.replace }}"
+      regexp: "{{ item.regexp }}"
+    loop:
+      - replace: '8080'
+        regexp: 'enter_port_here'
+      - replace: 'test.work'
+        regexp: 'enter_name_here'
+      - replace: '/var/www/wordpress'
+        regexp: 'enter_path_here'
+        
+  - name: enter port (cms.test.work)
+    ansible.builtin.replace:
+      path: /etc/nginx/sites-available/cms.test.work.conf
+      replace: "{{ item.replace }}"
+      regexp: "{{ item.regexp }}"
+    loop:
+      - replace: '8080'
+        regexp: 'enter_port_here'
+      - replace: 'test.work'
+        regexp: 'enter_name_here'
+      - replace: '192.168.1.148'
+        regexp: 'enter_ip_here'
+        
+  - name: enter port (test.work)
+    ansible.builtin.replace:
+      path: /etc/nginx/sites-available/test.work.conf
+      replace: "{{ item.replace }}"
+      regexp: "{{ item.regexp }}"
+    loop:
+      - replace: '8080'
+        regexp: 'enter_port_here'
+      - replace: 'test.work'
+        regexp: 'enter_name_here'
+      - replace: '192.168.1.148'
+        regexp: 'enter_ip_here'
+
+  - name: Create symbolic link for nginx and apache2
+    ansible.builtin.file:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      state: link
+    loop:
+      - src: '/etc/nginx/sites-available/cms.test.work.conf'
+        dest: '/etc/nginx/sites-enabled/cms.test.work.conf'
+      - src: '/etc/nginx/sites-available/test.work.conf'
+        dest: '/etc/nginx/sites-enabled/test.work.conf'
+      - src: '/etc/apache2/sites-available/cms.test.work.conf'
+        dest: '/etc/apache2/sites-enabled/cms.test.work.conf'
+      - src: '/etc/apache2/sites-available/test.work.conf'
+        dest: '/etc/apache2/sites-enabled/test.work.conf'
+
+  - name: Remove file (delete file)
+    ansible.builtin.file:
+      path: "{{ item.path }}"
+      state: absent
+    loop:
+      - path: '/etc/apache2/sites-enabled/000-default.conf'
+      - path: '/etc/nginx/sites-enabled/default'
+
+  - name: Change file ownership, group and permissions
+    ansible.builtin.file:
+      path: "{{ item.path }}"
+      owner: '33'
+      group: '33'
+      mode: '0755'
+      recurse: 'yes'
+    loop:
+      - path: '/var/www/joomla'
+      - path: '/var/www/wordpress'
+
+  - name: Restart services
+    systemd:
+      state: restarted
+      daemon_reload: true
+      name: "{{ item.name }}"
+    loop:
+      - name: nginx.service
+      - name: apache2.service
