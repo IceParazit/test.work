@@ -246,3 +246,13 @@
     loop:
       - name: nginx.service
       - name: apache2.service
+
+  - name: Send notify to Telegram
+    community.general.telegram:
+      token: '6274025966:AAFlmK5dZTF5RxDd8UFkC3lJ49xJahOkWqg'
+      api_args:
+        chat_id: -1002126724548
+        parse_mode: "markdown"
+        text: "script done"
+        disable_web_page_preview: true
+        disable_notification: true
