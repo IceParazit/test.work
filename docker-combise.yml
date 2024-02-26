@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  apache:
+    image: httpd:latest
+    volumes:
+      - /etc/apache2/sites-enabled/test.work.conf:/usr/local/apache2/conf/test.work.conf
+      - /etc/apache2/sites-enabled/cms.test.work.conf:/usr/local/apache2/conf/cms.test.work.conf
+      - /var/www/joomla:/var/www/joomla
+      - /var/www/wordpress:/var/www/wordpress
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: DB
+      MYSQL_USER: DBlin-admin
+      MYSQL_PASSWORD: mf8fbee5ed75b07741c53f4d68e516d4
+    volumes:
+      - /var/lib/mysql:/var/lib/mysql
+
+
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - /etc/nginx/sites-enabled/cms.test.work.conf:/etc/nginx/conf.d/cms.test.work.conf
+      - /etc/nginx/sites-enabled/test.work.conf:/etc/nginx/conf.d/test.work.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - apache
